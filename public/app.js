@@ -15,7 +15,13 @@ const els = {
   hunger: document.querySelector("#hunger"),
   boredom: document.querySelector("#boredom"),
   trust: document.querySelector("#trust"),
-  mood: document.querySelector("#mood")
+  mood: document.querySelector("#mood"),
+  mailForm: document.querySelector("#mailForm"),
+  mailInput: document.querySelector("#mailInput"),
+  mailConnectButton: document.querySelector("#mailConnectButton"),
+  mailCritiqueButton: document.querySelector("#mailCritiqueButton"),
+  mailStatus: document.querySelector("#mailStatus"),
+  mailPreview: document.querySelector("#mailPreview")
 };
 
 let state = {
@@ -24,7 +30,15 @@ let state = {
   boredom: 18,
   trust: 24,
   mood: "suspicious",
-  name: "お魚AI"
+  name: "お魚AI",
+  mail: {
+    address: "",
+    connected: false,
+    provider: "",
+    lastCritique: "",
+    lastError: null,
+    messages: []
+  }
 };
 
 let realtime = null;
@@ -79,6 +93,15 @@ function bindEvents() {
     if (!text) return;
     els.textInput.value = "";
     sendText(text);
+  });
+
+  els.mailForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await connectMail();
+  });
+
+  els.mailCritiqueButton.addEventListener("click", async () => {
+    await critiqueMail();
   });
 }
 
@@ -270,6 +293,97 @@ async function rememberInteraction(interaction) {
   });
 }
 
+async function connectMail() {
+  const address = els.mailInput.value.trim();
+  if (!address) {
+    say("メールアドレスくらい置いていけ。水槽に封筒は届かない。");
+    return;
+  }
+
+  setMailBusy(true);
+  try {
+    const response = await fetch("/api/mail/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "メール接続に失敗した");
+    }
+
+    state = data.state || { ...state, mail: data.mail };
+    renderState();
+    const count = data.mail.messages?.length || 0;
+    say(count ? `${count}通見えた。人間の未処理、なかなか濁っている。` : "メールアドレスは覚えた。中身はまだ見えない。");
+    log(data.warning ? `mail registered: ${data.warning}` : `mail connected: ${data.mail.provider}`);
+  } catch (error) {
+    console.error(error);
+    say(`メール接続に失敗した。${error.message}`);
+    log(`mail error: ${error.message}`);
+  } finally {
+    setMailBusy(false);
+  }
+}
+
+async function critiqueMail() {
+  const address = els.mailInput.value.trim() || state.mail?.address;
+  if (!address) {
+    say("先にメールを登録しろ。空の釣り針で批評は釣れない。");
+    return;
+  }
+
+  setMailBusy(true);
+  try {
+    const response = await fetch("/api/mail/critique", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "辛口診断に失敗した");
+    }
+
+    state = data.state || {
+      ...state,
+      mail: data.mail,
+      boredom: clamp(state.boredom - 7),
+      trust: clamp(state.trust + 3),
+      mood: "annoyed"
+    };
+    renderState();
+    say(data.critique);
+    log(data.warning ? `mail critique: ${data.warning}` : "mail critique generated");
+    speakCritique(data.critique);
+  } catch (error) {
+    console.error(error);
+    say(`辛口診断に失敗した。${error.message}`);
+    log(`mail critique error: ${error.message}`);
+  } finally {
+    setMailBusy(false);
+  }
+}
+
+function speakCritique(critique) {
+  if (!realtime?.dc || realtime.dc.readyState !== "open") {
+    return;
+  }
+
+  realtime.dc.send(JSON.stringify({
+    type: "conversation.item.create",
+    item: {
+      type: "message",
+      role: "user",
+      content: [{
+        type: "input_text",
+        text: `次のメール辛口診断を、お魚AIとして短く読み上げて。個人情報は追加で読み上げない。\n${critique}`
+      }]
+    }
+  }));
+  realtime.dc.send(JSON.stringify({ type: "response.create" }));
+}
+
 function driftFromText(text) {
   const lower = text.toLowerCase();
   const positive = /ありがとう|すごい|いいね|かわいい|好き|賢い/.test(lower);
@@ -299,7 +413,25 @@ function renderState() {
   els.boredom.value = state.boredom;
   els.trust.value = state.trust;
   els.mood.textContent = state.mood;
+  renderMail();
   aquarium?.setMood(state.mood);
+}
+
+function renderMail() {
+  const mail = state.mail || {};
+  const address = mail.address || "";
+  if (document.activeElement !== els.mailInput && els.mailInput.value !== address) {
+    els.mailInput.value = address;
+  }
+
+  const count = mail.messages?.length || 0;
+  const status = mail.connected ? `${mail.provider || "connected"} / ${count}通` : mail.address ? "registered" : "未登録";
+  els.mailStatus.textContent = status;
+
+  const latest = mail.messages?.[0];
+  els.mailPreview.textContent =
+    mail.lastCritique ||
+    (latest ? `最新: ${latest.subject || "件名なし"} / ${latest.from || "unknown"}` : mail.lastError || "メールなし");
 }
 
 function chooseMood(next) {
@@ -336,6 +468,12 @@ function setConnected(isConnected) {
   els.talkIcon.textContent = isConnected ? "■" : "●";
   els.talkLabel.textContent = isConnected ? "会話停止" : "会話開始";
   aquarium?.setLive(isConnected);
+}
+
+function setMailBusy(isBusy) {
+  els.mailConnectButton.disabled = isBusy;
+  els.mailCritiqueButton.disabled = isBusy;
+  els.mailCritiqueButton.textContent = isBusy ? "診断中" : "辛口診断";
 }
 
 async function initAquarium() {
