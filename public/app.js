@@ -447,8 +447,19 @@ function createAquarium(THREE, host) {
   }
   tank.add(gravel);
 
+  const creaturePlacement = new THREE.Group();
+  creaturePlacement.name = "OsakanaModelPlacement";
+  creaturePlacement.position.set(0, 0.02, 0.34);
+  creaturePlacement.rotation.y = -0.16;
+  creaturePlacement.scale.setScalar(1.08);
+  tank.add(creaturePlacement);
+
+  const habitat = createHabitatModel(THREE);
+  habitat.position.set(0, -1.5, -0.72);
+  tank.add(habitat);
+
   const fish = createFish(THREE);
-  scene.add(fish.root);
+  creaturePlacement.add(fish.root);
 
   const bubbles = [];
   const bubbleMaterial = new THREE.MeshStandardMaterial({
@@ -553,9 +564,70 @@ function createAquarium(THREE, host) {
     tapImpulse *= 0.9;
     tank.rotation.z = Math.sin(t * 32) * tapImpulse * 0.012;
     greenLight.intensity = live ? 12 : 7;
+    habitat.userData.animate(t);
     fish.animate(t, dt, mood, live, speaking, tapImpulse);
     renderer.render(scene, camera);
   }
+}
+
+function createHabitatModel(THREE) {
+  const root = new THREE.Group();
+
+  const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x4c5544, roughness: 0.88 });
+  const mossMaterial = new THREE.MeshStandardMaterial({ color: 0x6aa86c, roughness: 0.72 });
+  const coralMaterial = new THREE.MeshStandardMaterial({
+    color: 0xe58a73,
+    roughness: 0.5,
+    metalness: 0.02
+  });
+  const kelpMaterial = new THREE.MeshStandardMaterial({
+    color: 0x4fb076,
+    roughness: 0.58,
+    side: THREE.DoubleSide
+  });
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 1.18, 0.28, 18), rockMaterial);
+  base.position.set(-1.28, 0.08, 0.12);
+  base.scale.z = 0.64;
+  root.add(base);
+
+  const cap = new THREE.Mesh(new THREE.DodecahedronGeometry(0.42, 1), rockMaterial);
+  cap.position.set(-1.08, 0.34, 0.04);
+  cap.scale.set(1.35, 0.62, 0.82);
+  root.add(cap);
+
+  const moss = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 10), mossMaterial);
+  moss.position.set(-0.78, 0.48, 0.18);
+  moss.scale.set(1.45, 0.32, 0.76);
+  root.add(moss);
+
+  const coral = new THREE.Group();
+  coral.position.set(1.3, 0.02, -0.04);
+  root.add(coral);
+  for (let i = 0; i < 7; i += 1) {
+    const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.045, rand(0.36, 0.72), 8), coralMaterial);
+    branch.position.set(Math.sin(i * 1.7) * 0.18, 0.18 + i * 0.018, Math.cos(i * 1.2) * 0.12);
+    branch.rotation.set(rand(-0.42, 0.42), rand(-0.25, 0.25), rand(-0.62, 0.62));
+    coral.add(branch);
+  }
+
+  for (let i = 0; i < 9; i += 1) {
+    const kelp = new THREE.Mesh(new THREE.PlaneGeometry(0.13, rand(0.72, 1.26), 1, 5), kelpMaterial);
+    kelp.position.set(rand(-2.2, 2.2), 0.42, rand(-0.65, 0.82));
+    kelp.rotation.y = rand(-0.45, 0.45);
+    kelp.userData.phase = rand(0, Math.PI * 2);
+    root.add(kelp);
+  }
+
+  root.userData.animate = (t) => {
+    for (const child of root.children) {
+      if (child.userData.phase !== undefined) {
+        child.rotation.z = Math.sin(t * 1.4 + child.userData.phase) * 0.08;
+      }
+    }
+  };
+
+  return root;
 }
 
 function createFish(THREE) {
