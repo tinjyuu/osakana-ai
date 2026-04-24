@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>お魚AI</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="tank" aria-label="お魚AI observation tank">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">OSAKANA LAB // SPECIMEN 01</p>
+            <h1>お魚AI</h1>
+          </div>
+          <div class="connection" id="connection">offline</div>
+        </div>
+
+        <div id="scene" class="scene" aria-label="3D aquarium"></div>
+
+        <div class="transcript">
+          <p class="speaker" id="speaker">お魚AI</p>
+          <p id="subtitle">起こしたいなら、マイクを押せ。静寂も悪くないが、人間の沈黙はだいたい退屈だ。</p>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">state</p>
+          <h2>Creature</h2>
+        </div>
+
+        <div class="meters">
+          <label>
+            <span>好感度</span>
+            <meter id="affection" min="0" max="100" value="42"></meter>
+          </label>
+          <label>
+            <span>空腹度</span>
+            <meter id="hunger" min="0" max="100" value="32"></meter>
+          </label>
+          <label>
+            <span>退屈度</span>
+            <meter id="boredom" min="0" max="100" value="18"></meter>
+          </label>
+          <label>
+            <span>信頼度</span>
+            <meter id="trust" min="0" max="100" value="24"></meter>
+          </label>
+        </div>
+
+        <div class="mood">
+          <span>機嫌</span>
+          <strong id="mood">suspicious</strong>
+        </div>
+
+        <div class="controls">
+          <button class="primary" id="talkButton" type="button">
+            <span id="talkIcon">●</span>
+            <span id="talkLabel">会話開始</span>
+          </button>
+          <button id="feedButton" type="button">餌を落とす</button>
+          <button id="teaseButton" type="button">つつく</button>
+        </div>
+
+        <form class="text-form" id="textForm">
+          <input id="textInput" type="text" autocomplete="off" placeholder="テキストでも話しかける" />
+          <button type="submit">送信</button>
+        </form>
+
+        <div class="log" id="log" aria-live="polite"></div>
+      </aside>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
