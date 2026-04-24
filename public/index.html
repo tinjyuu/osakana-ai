@@ -1,18 +1,18 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>お魚AI</title>
+    <title>Osakana AI</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <main class="app">
-      <section class="tank" aria-label="お魚AI observation tank">
+      <section class="tank" aria-label="Osakana AI observation tank">
         <div class="topbar">
           <div>
             <p class="eyebrow">OSAKANA LAB // SPECIMEN 01</p>
-            <h1>お魚AI</h1>
+            <h1>Osakana AI</h1>
           </div>
           <div class="connection" id="connection">offline</div>
         </div>
@@ -20,8 +20,8 @@
         <div id="scene" class="scene" aria-label="3D aquarium"></div>
 
         <div class="transcript">
-          <p class="speaker" id="speaker">お魚AI</p>
-          <p id="subtitle">起こしたいなら、マイクを押せ。静寂も悪くないが、人間の沈黙はだいたい退屈だ。</p>
+          <p class="speaker" id="speaker">Osakana AI</p>
+          <p id="subtitle">Press the mic if you want to wake me. Silence is fine, but human silence is usually dull.</p>
         </div>
       </section>
 
@@ -33,53 +33,53 @@
 
         <div class="meters">
           <label>
-            <span>好感度</span>
+            <span>Affection</span>
             <meter id="affection" min="0" max="100" value="42"></meter>
           </label>
           <label>
-            <span>空腹度</span>
+            <span>Hunger</span>
             <meter id="hunger" min="0" max="100" value="32"></meter>
           </label>
           <label>
-            <span>退屈度</span>
+            <span>Boredom</span>
             <meter id="boredom" min="0" max="100" value="18"></meter>
           </label>
           <label>
-            <span>信頼度</span>
+            <span>Trust</span>
             <meter id="trust" min="0" max="100" value="24"></meter>
           </label>
         </div>
 
         <div class="mood">
-          <span>機嫌</span>
+          <span>Mood</span>
           <strong id="mood">suspicious</strong>
         </div>
 
         <div class="mail-panel">
           <div class="mail-head">
             <span>mail</span>
-            <strong id="mailStatus">未登録</strong>
+            <strong id="mailStatus">not registered</strong>
           </div>
           <form class="mail-form" id="mailForm">
             <input id="mailInput" type="email" autocomplete="email" placeholder="mail@example.com" />
-            <button id="mailConnectButton" type="submit">接続</button>
+            <button id="mailConnectButton" type="submit">Connect</button>
           </form>
-          <button id="mailCritiqueButton" type="button">辛口診断</button>
-          <p class="mail-preview" id="mailPreview">メールなし</p>
+          <button id="mailCritiqueButton" type="button">Critique Mail</button>
+          <p class="mail-preview" id="mailPreview">No mail</p>
         </div>
 
         <div class="controls">
           <button class="primary" id="talkButton" type="button">
             <span id="talkIcon">●</span>
-            <span id="talkLabel">会話開始</span>
+            <span id="talkLabel">Start Talk</span>
           </button>
-          <button id="feedButton" type="button">餌を落とす</button>
-          <button id="teaseButton" type="button">つつく</button>
+          <button id="feedButton" type="button">Drop Food</button>
+          <button id="teaseButton" type="button">Tap Glass</button>
         </div>
 
         <form class="text-form" id="textForm">
-          <input id="textInput" type="text" autocomplete="off" placeholder="テキストでも話しかける" />
-          <button type="submit">送信</button>
+          <input id="textInput" type="text" autocomplete="off" placeholder="Talk by text, too" />
+          <button type="submit">Send</button>
         </form>
 
         <div class="log" id="log" aria-live="polite"></div>
