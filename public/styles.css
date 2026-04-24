@@ -192,6 +192,43 @@ meter {
   color: var(--ink);
 }
 
+.mail-panel {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.mail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mail-head strong {
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mail-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 66px;
+  gap: 8px;
+}
+
+.mail-preview {
+  min-height: 42px;
+  max-height: 88px;
+  margin: 0;
+  overflow: auto;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
