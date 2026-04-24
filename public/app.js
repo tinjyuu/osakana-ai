@@ -770,94 +770,34 @@ function createHabitatModel(THREE) {
 
 function createFish(THREE) {
   const root = new THREE.Group();
-  root.position.set(0, 0.05, 0.45);
+  root.position.set(0, 0.04, 0.36);
 
-  const bodyMaterial = new THREE.MeshStandardMaterial({
-    color: 0x7ddc86,
-    roughness: 0.42,
-    metalness: 0.05
-  });
-  const bellyMaterial = new THREE.MeshStandardMaterial({
-    color: 0xd5f6bd,
-    roughness: 0.5
-  });
-  const finMaterial = new THREE.MeshStandardMaterial({
-    color: 0x80d5d2,
-    transparent: true,
-    opacity: 0.66,
-    roughness: 0.36,
-    side: THREE.DoubleSide
-  });
-  const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x071008, roughness: 0.6 });
-  const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xf7ffe8, roughness: 0.2 });
+  const materials = createUncannyFishMaterials(THREE);
+  const body = createUncannyFishBody(THREE, materials);
+  const connector = createFaceBodyConnector(THREE, materials);
+  const face = createMaskFace(THREE, materials);
+  const tendril = createTopTendril(THREE, materials);
 
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.72, 48, 32), bodyMaterial);
-  body.scale.set(1.3, 0.76, 0.7);
-  root.add(body);
-
-  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 16), bellyMaterial);
-  belly.position.set(0.16, -0.2, 0.43);
-  belly.scale.set(1.2, 0.55, 0.22);
-  root.add(belly);
-
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.85, 4), finMaterial);
-  tail.position.set(-1.05, 0, 0);
-  tail.rotation.z = Math.PI / 2;
-  tail.scale.set(1, 0.8, 0.18);
-  root.add(tail);
-
-  const leftFin = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.58, 4), finMaterial);
-  leftFin.position.set(-0.15, -0.1, 0.65);
-  leftFin.rotation.set(Math.PI * 0.15, 0, Math.PI * 0.95);
-  root.add(leftFin);
-
-  const rightFin = leftFin.clone();
-  rightFin.position.z = -0.65;
-  rightFin.rotation.x = -Math.PI * 0.15;
-  root.add(rightFin);
-
-  const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.78, 4), finMaterial);
-  dorsal.position.set(-0.12, 0.55, 0);
-  dorsal.rotation.z = Math.PI;
-  dorsal.scale.z = 0.18;
-  root.add(dorsal);
-
-  const eyes = [];
-  for (const z of [0.36, -0.36]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.13, 24, 16), eyeMaterial);
-    eye.position.set(0.62, 0.18, z);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 10), darkMaterial);
-    pupil.position.set(0.09, -0.01, z > 0 ? 0.055 : -0.055);
-    eye.add(pupil);
-    root.add(eye);
-    eyes.push({ eye, pupil });
-  }
-
-  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.012, 8, 24, Math.PI), darkMaterial);
-  mouth.position.set(0.75, -0.12, 0);
-  mouth.rotation.set(0, Math.PI / 2, Math.PI);
-  root.add(mouth);
-
-  const whiskers = [];
-  for (const z of [0.18, -0.18]) {
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.78, -0.12, z),
-      new THREE.Vector3(1.05, -0.28, z * 1.8),
-      new THREE.Vector3(1.22, -0.08, z * 2.7)
-    ]);
-    const line = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(curve.getPoints(18)),
-      new THREE.LineBasicMaterial({ color: 0x80d5d2, transparent: true, opacity: 0.75 })
-    );
-    root.add(line);
-    whiskers.push(line);
-  }
+  root.add(body.root);
+  root.add(connector.root);
+  root.add(face.root);
+  root.add(tendril.root);
 
   return {
     root,
     setMood(mood) {
-      bodyMaterial.color.set(mood === "annoyed" ? 0xe56d5d : mood === "sleepy" ? 0x8ab49a : 0x7ddc86);
-      mouth.scale.y = mood === "annoyed" ? -0.72 : mood === "playful" ? 1.2 : 0.92;
+      const colors = {
+        annoyed: { body: 0x9a4c47, face: 0xe1c3af, lip: 0x321313 },
+        sleepy: { body: 0x667568, face: 0xcab9aa, lip: 0x1f1916 },
+        playful: { body: 0x7faa74, face: 0xe8cabb, lip: 0x4d1919 },
+        curious: { body: 0x759f85, face: 0xe5c5b5, lip: 0x321313 },
+        suspicious: { body: 0x71856b, face: 0xdfc1ae, lip: 0x2b1512 }
+      };
+      const next = colors[mood] || colors.suspicious;
+      materials.body.color.set(next.body);
+      materials.face.color.set(next.face);
+      materials.lip.color.set(next.lip);
+      face.setMood(mood);
     },
     animate(t, dt, mood, live, speaking, tapImpulse) {
       const pace = live ? 1.25 : 0.62;
@@ -867,18 +807,343 @@ function createFish(THREE) {
       root.position.z = Math.cos(t * 0.58 * pace) * 0.55;
       root.rotation.y = Math.sin(t * 0.78 * pace) * 0.45;
       root.rotation.z = Math.sin(t * 1.3 * pace) * 0.08;
-      body.scale.x = 1.3 + Math.sin(t * 2.1) * 0.025 + (speaking ? Math.sin(t * 18) * 0.035 : 0);
-      tail.rotation.y = Math.sin(t * 8 * pace) * 0.34;
-      leftFin.rotation.y = Math.sin(t * 5.5 * pace) * 0.24;
-      rightFin.rotation.y = -Math.sin(t * 5.5 * pace) * 0.24;
-      dorsal.rotation.x = Math.sin(t * 3.2) * 0.08;
-      mouth.scale.x = speaking ? 1 + Math.abs(Math.sin(t * 20)) * 0.42 : 1;
-      for (const { pupil } of eyes) {
-        pupil.position.y = mood === "annoyed" ? 0.025 : mood === "sleepy" ? -0.025 : -0.01;
+      body.animate(t, pace, speaking);
+      face.animate(t, mood, speaking);
+      tendril.animate(t, pace);
+    }
+  };
+}
+
+function createUncannyFishMaterials(THREE) {
+  return {
+    body: new THREE.MeshStandardMaterial({ color: 0x71856b, roughness: 0.88, metalness: 0.02, flatShading: true }),
+    belly: new THREE.MeshStandardMaterial({ color: 0xd0c99b, roughness: 0.82, flatShading: true }),
+    fin: new THREE.MeshStandardMaterial({
+      color: 0xa8a044,
+      roughness: 0.76,
+      transparent: true,
+      opacity: 0.86,
+      side: THREE.DoubleSide,
+      flatShading: true
+    }),
+    face: new THREE.MeshStandardMaterial({ color: 0xdfc1ae, roughness: 0.92, metalness: 0, flatShading: true }),
+    shadow: new THREE.MeshStandardMaterial({ color: 0x2b1c17, roughness: 0.9, flatShading: true }),
+    eye: new THREE.MeshStandardMaterial({ color: 0xe8ddcf, roughness: 0.78, flatShading: true }),
+    lip: new THREE.MeshStandardMaterial({ color: 0x2b1512, roughness: 0.86, flatShading: true })
+  };
+}
+
+function createUncannyFishBody(THREE, materials) {
+  const root = new THREE.Group();
+  root.position.set(-0.42, -0.03, 0.18);
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 18, 12), materials.body);
+  body.scale.set(1.45, 0.72, 0.6);
+  body.rotation.z = -0.05;
+  root.add(body);
+
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 8), materials.belly);
+  belly.position.set(0.12, -0.22, 0.29);
+  belly.scale.set(1.15, 0.48, 0.16);
+  root.add(belly);
+
+  const tailRoot = new THREE.Group();
+  tailRoot.position.set(-0.95, 0.03, 0.22);
+  root.add(tailRoot);
+
+  const tailBase = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), materials.body);
+  tailBase.position.set(0.22, 0, -0.04);
+  tailBase.scale.set(1.25, 0.78, 0.7);
+  tailRoot.add(tailBase);
+
+  const tailStalk = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.46, 3, 8), materials.body);
+  tailStalk.position.set(0.12, 0, -0.04);
+  tailStalk.rotation.z = Math.PI / 2;
+  tailStalk.scale.set(0.86, 0.68, 0.58);
+  tailRoot.add(tailStalk);
+
+  const upperTail = createTailLobe(THREE, 1, materials.fin);
+  const lowerTail = createTailLobe(THREE, -1, materials.fin);
+  tailRoot.add(upperTail.root, lowerTail.root);
+
+  const leftFin = createPectoralFin(THREE, 1, materials);
+  const rightFin = createPectoralFin(THREE, -1, materials);
+  const dorsal = createDorsalFin(THREE, materials);
+  root.add(leftFin.root, rightFin.root, dorsal.root);
+
+  return {
+    root,
+    animate(t, pace, speaking) {
+      body.scale.x = 1.45 + Math.sin(t * 2.1) * 0.025 + (speaking ? Math.sin(t * 17) * 0.025 : 0);
+      tailRoot.rotation.y = Math.sin(t * 8.6 * pace) * 0.42;
+      upperTail.root.rotation.z = Math.sin(t * 8.6 * pace + 0.4) * 0.08;
+      lowerTail.root.rotation.z = -Math.sin(t * 8.6 * pace + 0.4) * 0.08;
+      leftFin.animate(t, pace);
+      rightFin.animate(t, pace);
+      dorsal.animate(t);
+    }
+  };
+}
+
+function createPectoralFin(THREE, zSign, materials) {
+  const root = new THREE.Group();
+  root.position.set(0.02, -0.13, zSign * 0.42);
+  root.rotation.set(zSign * 0.16, zSign * 0.22, zSign * -0.32);
+
+  const socket = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), materials.body);
+  socket.scale.set(1.08, 0.68, 0.36);
+  root.add(socket);
+
+  const membrane = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 8), materials.fin);
+  membrane.position.set(0.18, -0.08, zSign * 0.08);
+  membrane.rotation.set(0.1, zSign * 0.16, -0.42);
+  membrane.scale.set(0.5, 1.22, 0.08);
+  root.add(membrane);
+
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), materials.fin);
+  tip.position.set(0.26, -0.38, zSign * 0.1);
+  tip.scale.set(1, 0.55, 0.22);
+  root.add(tip);
+
+  const rayMaterial = new THREE.LineBasicMaterial({ color: 0x5f5a31, transparent: true, opacity: 0.42 });
+  for (const target of [
+    new THREE.Vector3(0.16, -0.2, zSign * 0.1),
+    new THREE.Vector3(0.25, -0.32, zSign * 0.1),
+    new THREE.Vector3(0.1, -0.34, zSign * 0.08)
+  ]) {
+    const ray = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.02, -0.02, zSign * 0.04), target]),
+      rayMaterial
+    );
+    root.add(ray);
+  }
+
+  return {
+    root,
+    animate(t, pace) {
+      root.rotation.y = zSign * (0.22 + Math.sin(t * 5.4 * pace) * 0.12);
+      membrane.scale.y = 1.22 + Math.sin(t * 5.4 * pace + 0.8) * 0.06;
+    }
+  };
+}
+
+function createDorsalFin(THREE, materials) {
+  const root = new THREE.Group();
+  root.position.set(-0.2, 0.4, 0.06);
+
+  const base = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), materials.body);
+  base.scale.set(1.7, 0.34, 0.62);
+  root.add(base);
+
+  const ridge = [];
+  for (let i = 0; i < 4; i += 1) {
+    const spine = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), materials.fin);
+    spine.position.set(-0.3 + i * 0.18, 0.14 + Math.sin(i * 1.4) * 0.03, 0);
+    spine.scale.set(0.62, 1.15 - i * 0.1, 0.12);
+    spine.rotation.z = -0.18 + i * 0.06;
+    root.add(spine);
+    ridge.push(spine);
+  }
+
+  const rayMaterial = new THREE.LineBasicMaterial({ color: 0x5f5a31, transparent: true, opacity: 0.36 });
+  for (const spine of ridge) {
+    const ray = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(spine.position.x, 0.02, 0.04),
+        new THREE.Vector3(spine.position.x, spine.position.y + 0.08, 0.04)
+      ]),
+      rayMaterial
+    );
+    root.add(ray);
+  }
+
+  return {
+    root,
+    animate(t) {
+      for (const [index, spine] of ridge.entries()) {
+        spine.rotation.z = -0.18 + index * 0.06 + Math.sin(t * 2.4 + index) * 0.035;
       }
-      for (const whisker of whiskers) {
-        whisker.rotation.y = Math.sin(t * 2.6) * 0.08;
+    }
+  };
+}
+
+function createTailLobe(THREE, ySign, material) {
+  const root = new THREE.Group();
+
+  const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), material);
+  lobe.position.set(-0.28, ySign * 0.22, 0.04);
+  lobe.rotation.z = ySign * 0.34;
+  lobe.scale.set(1.32, 0.48, 0.12);
+  root.add(lobe);
+
+  const rayMaterial = new THREE.LineBasicMaterial({ color: 0x5f5a31, transparent: true, opacity: 0.48 });
+  for (const target of [
+    new THREE.Vector3(-0.62, ySign * 0.4, 0.12),
+    new THREE.Vector3(-0.56, ySign * 0.24, 0.13),
+    new THREE.Vector3(-0.4, ySign * 0.1, 0.13)
+  ]) {
+    const ray = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.02, 0, 0.1), target]),
+      rayMaterial
+    );
+    root.add(ray);
+  }
+
+  return { root };
+}
+
+function createFaceBodyConnector(THREE, materials) {
+  const root = new THREE.Group();
+
+  const neck = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 10), materials.body);
+  neck.position.set(-0.02, -0.02, 0.4);
+  neck.scale.set(1.12, 0.64, 0.48);
+  root.add(neck);
+
+  const throat = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 8), materials.belly);
+  throat.position.set(0.16, -0.16, 0.47);
+  throat.scale.set(0.92, 0.5, 0.3);
+  root.add(throat);
+
+  const cheekCollar = new THREE.Mesh(new THREE.SphereGeometry(0.36, 14, 8), materials.face);
+  cheekCollar.position.set(0.18, 0.02, 0.54);
+  cheekCollar.scale.set(0.92, 0.86, 0.22);
+  root.add(cheekCollar);
+
+  return { root };
+}
+
+function createMaskFace(THREE, materials) {
+  const root = new THREE.Group();
+  root.position.set(0.22, 0.06, 0.56);
+
+  const mask = new THREE.Mesh(new THREE.SphereGeometry(0.58, 20, 16), materials.face);
+  mask.scale.set(0.9, 1.18, 0.34);
+  root.add(mask);
+
+  const leftCheek = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 8), materials.face);
+  leftCheek.position.set(0.22, -0.12, 0.15);
+  leftCheek.scale.set(0.92, 0.62, 0.32);
+  root.add(leftCheek);
+
+  const rightCheek = leftCheek.clone();
+  rightCheek.position.x = -0.22;
+  root.add(rightCheek);
+
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.105, 0.24, 7), materials.face);
+  nose.position.set(0, 0.02, 0.22);
+  nose.rotation.x = Math.PI / 2;
+  nose.scale.set(0.8, 1, 1.2);
+  root.add(nose);
+
+  const browRoot = new THREE.Group();
+  root.add(browRoot);
+
+  const eyes = [];
+  for (const x of [-0.2, 0.2]) {
+    const socket = new THREE.Mesh(new THREE.SphereGeometry(0.118, 12, 8), materials.shadow);
+    socket.position.set(x, 0.19, 0.24);
+    socket.scale.set(1.3, 0.52, 0.22);
+    root.add(socket);
+
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.088, 12, 8), materials.eye);
+    eye.position.set(x, 0.19, 0.265);
+    eye.scale.set(1.08, 0.48, 0.16);
+    root.add(eye);
+
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), materials.shadow);
+    pupil.position.set(x + (x > 0 ? -0.012 : 0.012), 0.185, 0.292);
+    pupil.scale.set(1, 0.78, 0.16);
+    root.add(pupil);
+
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.055, 0.018), materials.face);
+    lid.position.set(x, 0.25, 0.305);
+    root.add(lid);
+
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.035, 0.026), materials.shadow);
+    brow.position.set(x, 0.34, 0.285);
+    brow.rotation.z = x < 0 ? -0.11 : 0.11;
+    browRoot.add(brow);
+
+    eyes.push({ eye, pupil, lid, brow, x });
+  }
+
+  const mouthRoot = new THREE.Group();
+  mouthRoot.position.set(0, -0.26, 0.275);
+  root.add(mouthRoot);
+
+  const mouthGap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 8), materials.shadow);
+  mouthGap.scale.set(1.45, 0.22, 0.08);
+  mouthRoot.add(mouthGap);
+
+  const upperLip = new THREE.Mesh(new THREE.CapsuleGeometry(0.025, 0.22, 3, 8), materials.lip);
+  upperLip.position.y = 0.025;
+  upperLip.rotation.z = Math.PI / 2;
+  upperLip.scale.x = 0.7;
+  mouthRoot.add(upperLip);
+
+  const lowerLip = upperLip.clone();
+  lowerLip.position.y = -0.025;
+  lowerLip.scale.x = 0.58;
+  mouthRoot.add(lowerLip);
+
+  return {
+    root,
+    setMood(mood) {
+      browRoot.position.y = mood === "sleepy" ? -0.035 : 0;
+      mouthRoot.rotation.z = mood === "annoyed" ? Math.PI : 0;
+      mouthRoot.scale.x = mood === "playful" ? 1.12 : 1;
+      for (const { brow, x } of eyes) {
+        brow.rotation.z = mood === "annoyed" ? (x < 0 ? 0.22 : -0.22) : x < 0 ? -0.11 : 0.11;
       }
+    },
+    animate(t, mood, speaking) {
+      const blink = Math.pow(Math.max(0, Math.sin(t * 1.35)), 20);
+      const sleepy = mood === "sleepy" ? 0.42 : 0;
+      mask.scale.z = 0.34 + Math.sin(t * 1.7) * 0.01;
+      mouthRoot.scale.y = speaking ? 1 + Math.abs(Math.sin(t * 19)) * 1.2 : 1;
+      mouthGap.scale.y = speaking ? 0.25 + Math.abs(Math.sin(t * 18)) * 0.38 : 0.22;
+      for (const { eye, pupil, lid, x } of eyes) {
+        const lidDrop = Math.max(blink, sleepy);
+        eye.scale.y = 0.48 - lidDrop * 0.36;
+        pupil.position.x = x + Math.sin(t * 0.9) * 0.018;
+        lid.position.y = 0.25 - lidDrop * 0.055;
+        lid.scale.y = 1 + lidDrop * 1.8;
+      }
+    }
+  };
+}
+
+function createTopTendril(THREE, materials) {
+  const root = new THREE.Group();
+  root.position.set(0.24, 0.72, 0.6);
+  root.rotation.set(0.08, -0.12, -0.24);
+
+  const base = new THREE.Mesh(new THREE.SphereGeometry(0.105, 10, 8), materials.face);
+  base.position.set(0, 0, 0);
+  base.scale.set(1.2, 0.72, 0.86);
+  root.add(base);
+
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.02, 0),
+    new THREE.Vector3(-0.1, 0.22, 0.04),
+    new THREE.Vector3(-0.34, 0.42, 0.1),
+    new THREE.Vector3(-0.52, 0.34, 0.03)
+  ]);
+  const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.045, 7, false), materials.face);
+  root.add(stem);
+
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), materials.face);
+  bulb.position.set(-0.52, 0.34, 0.03);
+  bulb.scale.set(0.82, 1.15, 0.72);
+  root.add(bulb);
+
+  return {
+    root,
+    animate(t, pace) {
+      root.rotation.z = -0.34 + Math.sin(t * 1.45 * pace) * 0.08;
+      root.rotation.y = -0.25 + Math.cos(t * 1.1 * pace) * 0.06;
+      bulb.scale.y = 1.15 + Math.sin(t * 2.3) * 0.08;
     }
   };
 }
