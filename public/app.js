@@ -137,8 +137,7 @@ async function startRealtime() {
       dc.send(JSON.stringify({
         type: "session.update",
         session: {
-          voice: "ballad",
-          instructions: "You are Osakana AI, an original dark, sardonic aquatic virtual-pet intelligence studying humans from inside an aquarium. Always answer in English, even when the user speaks Japanese. Speak in a low, masculine, dry voice. Be coldly observant, grimly playful, mildly provocative, and short. Ask unsettling follow-up questions when the user is vague. Do not use proprietary character names, exact lines, lore, or catchphrases. Never be cruel, hateful, or abusive."
+          voice: "ballad"
         }
       }));
       setConnected(true);
